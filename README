@@ -1,0 +1,249 @@
+# 💳 Wallet & Transfers API
+
+A production-style backend REST API built with **Node.js (Express)** and **PostgreSQL** that supports wallet management and atomic money transfers.
+
+This project demonstrates real backend engineering concepts such as:
+
+- Database transactions (ACID)
+- Row-level locking to prevent race conditions
+- Idempotency key handling for safe retries
+- Append-only ledger design for auditing
+- Clean architecture separation (Routes → Services → Database)
+- Dockerized development environment
+- Swagger (OpenAPI) documentation
+
+---
+
+## 🚀 Features
+
+### Wallet Management
+
+- Create wallet
+- List wallets
+- Get wallet by ID
+- Deposit funds
+- Withdraw funds (with insufficient balance protection)
+
+### Transfers
+
+- Atomic wallet-to-wallet transfers
+- Row-level locking (`SELECT ... FOR UPDATE`)
+- Idempotency key support (prevents duplicate transfers)
+- Transfer status tracking
+
+### Ledger System
+
+- Append-only ledger entries
+- Tracks:
+  - DEPOSIT
+  - WITHDRAW
+  - TRANSFER_OUT
+  - TRANSFER_IN
+- Provides full audit trail for balance changes
+
+### API Documentation
+
+- Swagger UI available at `/docs`
+
+### DevOps
+
+- Docker & Docker Compose setup
+- Easy reset and rebuild commands
+- Environment-based configuration
+
+---
+
+## 🛠 Tech Stack
+
+- **Node.js**
+- **Express.js**
+- **PostgreSQL**
+- **pg (node-postgres)**
+- **Docker & Docker Compose**
+- **Swagger (OpenAPI 3)**
+- **UUID**
+- **Helmet & Morgan (security & logging)**
+
+---
+
+## 🏗 Architecture Overview
+
+src/
+routes/ → HTTP layer
+services/ → Business logic
+db/ → Database connection & migration
+middleware/ → Error handling & validation
+utils/ → Helper functions
+
+Separation of concerns:
+
+- Routes handle HTTP.
+- Services contain core business logic.
+- Database layer ensures data integrity.
+
+---
+
+## ⚙️ Core Engineering Concepts Implemented
+
+### ✅ Atomic Transactions
+
+Transfers are executed inside a database transaction:
+
+BEGIN
+Lock wallets
+Debit sender
+Credit receiver
+Insert ledger entries
+COMMIT
+
+If anything fails → `ROLLBACK`
+
+This guarantees that money is never partially transferred.
+
+---
+
+### ✅ Row-Level Locking
+
+Using:
+
+SELECT ... FOR UPDATE
+
+Prevents race conditions and double-spending when concurrent requests happen.
+
+---
+
+### ✅ Idempotency Key
+
+Each transfer requires:
+
+Idempotency-Key: <UUID>
+
+This ensures:
+
+- Safe retries
+- No duplicate transfers
+- Conflict detection if payload changes
+
+---
+
+### ✅ Ledger-Based Design
+
+Instead of overwriting history,
+every operation creates a ledger record.
+
+This enables:
+
+- Audit trail
+- Debugging
+- Balance reconstruction
+
+---
+
+# 📦 Requirements
+
+To run this project locally, you need:
+
+- Node.js (v18+ recommended)
+- Docker Desktop
+- Git
+
+---
+
+# 📥 Download / Clone the Project
+
+### Option 1 — Clone via Git
+
+```bash
+git clone https://github.com/<YOUR_USERNAME>/wallet-service.git
+cd wallet-service
+Option 2 — Download ZIP
+Click Code → Download ZIP
+
+Extract the project
+
+Open terminal inside the project folder
+
+🐳 Run With Docker (Recommended)
+
+Step 1 — Create .env file
+Create a file named .env in the root directory:
+PORT=3000
+DATABASE_URL=postgresql://postgres:postgres@db:5432/walletdb
+
+Step 2 — Build & Start Containers
+npm run docker:up
+
+This will:
+Build the API image
+Start PostgreSQL container
+Start the API container
+
+Step 3 — Run Database Migration
+npm run docker:migrate
+
+This creates:
+wallets table
+transfers table
+ledger_entries table
+
+Step 4 — Access the API
+API Base URL:
+
+http://localhost:3000
+Health Check:
+http://localhost:3000/health
+
+Swagger Documentation:
+http://localhost:3000/docs
+
+Step 5 — View Logs
+npm run docker:logs
+
+Step 6 — Stop Containers
+npm run docker:down
+
+Step 7 — Reset Database (Delete Everything)
+npm run docker:reset
+This will:
+Remove database volume
+Rebuild containers
+Re-run migration
+
+💻 Run Locally Without Docker (Optional)
+If you prefer not to use Docker:
+
+1️⃣ Install dependencies
+npm install
+
+2️⃣ Create local PostgreSQL database
+Create database walletdb using pgAdmin or:
+createdb -U postgres walletdb
+
+3️⃣ Create .env
+PORT=3000
+DATABASE_URL=postgresql://postgres:<YOUR_PASSWORD>@localhost:5432/walletdb
+
+4️⃣ Run migration
+npm run migrate
+
+5️⃣ Start server
+npm run dev
+
+
+🧪 Example Testing Flow (Swagger)
+Create two wallets
+Deposit money into Wallet A
+Transfer from A → B (with Idempotency-Key header)
+Retry transfer (should not duplicate)
+Check balances
+Check ledger entries
+
+🎯 What This Project Demonstrates
+Backend API design
+Data consistency guarantees
+Transaction management
+Concurrency handling
+Idempotency implementation
+Clean code structure
+Docker-based development workflow
+```
