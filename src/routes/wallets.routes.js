@@ -7,9 +7,30 @@ import {
   deposit,
   withdraw,
   listWallets,
+  deleteWallet,
+  restoreWallet,
 } from "../services/wallet.service.js";
 
 const router = Router();
+
+router.delete("/:id", async (req, res, next) => {
+  try {
+    const deleted = await deleteWallet(req.params.id);
+    res.json(deleted);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.patch("/:id/restore", async (req, res, next) => {
+  try {
+    const restored = await restoreWallet(req.params.id);
+    res.json(restored);
+  } catch (e) {
+    next(e);
+  }
+});
+
 router.get("/", async (req, res, next) => {
   try {
     const wallets = await listWallets(req.query.limit);

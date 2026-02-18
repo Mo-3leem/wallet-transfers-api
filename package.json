@@ -12,7 +12,11 @@
     "docker:logs": "docker compose logs -f api",
     "docker:migrate": "docker compose exec api npm run migrate",
     "docker:restart": "docker compose restart api",
-    "docker:reset": "docker compose down -v && docker compose up --build -d && docker compose exec api npm run migrate"
+    "docker:ps": "docker compose ps",
+    "docker:psql": "docker compose exec db psql -U postgres -d walletdb",
+    "docker:setup": "docker compose up --build -d && docker compose exec api npm run migrate",
+    "docker:reset": "docker compose down -v && docker compose up --build -d && docker compose exec api npm run migrate",
+    "docker:clean": "docker compose down -v --remove-orphans && docker system prune -f"
   },
   "keywords": [],
   "author": "",

@@ -8,6 +8,8 @@ This project demonstrates real backend engineering concepts such as:
 - Row-level locking to prevent race conditions
 - Idempotency key handling for safe retries
 - Append-only ledger design for auditing
+- Soft delete & restore lifecycle
+- Database indexing for performance optimization
 - Clean architecture separation (Routes → Services → Database)
 - Dockerized development environment
 - Swagger (OpenAPI) documentation
@@ -23,6 +25,8 @@ This project demonstrates real backend engineering concepts such as:
 - Get wallet by ID
 - Deposit funds
 - Withdraw funds (with insufficient balance protection)
+- **Soft delete wallet (status = deleted)**
+- **Restore wallet (status = active)**
 
 ### Transfers
 
@@ -41,15 +45,25 @@ This project demonstrates real backend engineering concepts such as:
   - TRANSFER_IN
 - Provides full audit trail for balance changes
 
+### Performance Optimization
+
+Database indexes added on:
+
+- `(from_wallet_id, idempotency_key)` → Fast idempotency checks
+- `wallet_id` in ledger → Faster history retrieval
+- `created_at` → Optimized sorting and listing
+
 ### API Documentation
 
 - Swagger UI available at `/docs`
+- Endpoints grouped logically using Swagger Tags
 
 ### DevOps
 
 - Docker & Docker Compose setup
 - Easy reset and rebuild commands
 - Environment-based configuration
+- CLI access to PostgreSQL container
 
 ---
 
@@ -75,7 +89,7 @@ db/ → Database connection & migration
 middleware/ → Error handling & validation
 utils/ → Helper functions
 
-Separation of concerns:
+### Separation of concerns:
 
 - Routes handle HTTP.
 - Services contain core business logic.
@@ -90,15 +104,14 @@ Separation of concerns:
 Transfers are executed inside a database transaction:
 
 BEGIN
-Lock wallets
-Debit sender
-Credit receiver
-Insert ledger entries
+SELECT ... FOR UPDATE
+UPDATE balances
+INSERT ledger entries
 COMMIT
 
-If anything fails → `ROLLBACK`
+If anything fails → `ROLLBACK`.
 
-This guarantees that money is never partially transferred.
+Guarantees money is never partially transferred.
 
 ---
 
@@ -108,7 +121,7 @@ Using:
 
 SELECT ... FOR UPDATE
 
-Prevents race conditions and double-spending when concurrent requests happen.
+Prevents race conditions and double-spending under concurrent requests.
 
 ---
 
@@ -118,24 +131,34 @@ Each transfer requires:
 
 Idempotency-Key: <UUID>
 
-This ensures:
+Ensures:
 
 - Safe retries
 - No duplicate transfers
-- Conflict detection if payload changes
+- Conflict detection (409)
+
+---
+
+### ✅ Soft Delete & Restore
+
+Instead of removing rows from DB:
+
+- `DELETE /wallets/{id}` → sets `status = deleted`
+- `PATCH /wallets/{id}/restore` → sets `status = active`
+
+Preserves history and maintains data integrity.
 
 ---
 
 ### ✅ Ledger-Based Design
 
-Instead of overwriting history,
-every operation creates a ledger record.
+Every balance change is recorded.
 
-This enables:
+Benefits:
 
 - Audit trail
-- Debugging
-- Balance reconstruction
+- Debugging support
+- Possible balance reconstruction
 
 ---
 
@@ -151,99 +174,92 @@ To run this project locally, you need:
 
 # 📥 Download / Clone the Project
 
-### Option 1 — Clone via Git
+### Clone via Git
 
 ```bash
 git clone https://github.com/<YOUR_USERNAME>/wallet-service.git
 cd wallet-service
-Option 2 — Download ZIP
+Or Download ZIP
 Click Code → Download ZIP
 
-Extract the project
+Extract project
 
-Open terminal inside the project folder
+Open terminal inside folder
 
 🐳 Run With Docker (Recommended)
+1️⃣ Create .env file
+Create .env in root directory:
 
-Step 1 — Create .env file
-Create a file named .env in the root directory:
 PORT=3000
 DATABASE_URL=postgresql://postgres:postgres@db:5432/walletdb
-
-Step 2 — Build & Start Containers
+2️⃣ Start Containers
 npm run docker:up
-
-This will:
-Build the API image
-Start PostgreSQL container
-Start the API container
-
-Step 3 — Run Database Migration
+3️⃣ Run Migration
 npm run docker:migrate
-
-This creates:
-wallets table
-transfers table
-ledger_entries table
-
-Step 4 — Access the API
-API Base URL:
+4️⃣ Access the API
+API:
 
 http://localhost:3000
-Health Check:
+Health:
+
 http://localhost:3000/health
+Swagger:
 
-Swagger Documentation:
 http://localhost:3000/docs
-
-Step 5 — View Logs
+Useful Docker Commands
+View logs
 npm run docker:logs
-
-Step 6 — Stop Containers
+Restart API
+npm run docker:restart
+Stop containers
 npm run docker:down
-
-Step 7 — Reset Database (Delete Everything)
+♻️ Reset Database (Delete ALL Data)
 npm run docker:reset
 This will:
+
 Remove database volume
+
 Rebuild containers
+
 Re-run migration
 
-💻 Run Locally Without Docker (Optional)
-If you prefer not to use Docker:
+🔎 Access PostgreSQL CLI
+npm run docker:psql
+Example queries:
 
+SELECT * FROM wallets;
+SELECT * FROM transfers;
+SELECT * FROM ledger_entries;
+💻 Run Locally Without Docker (Optional)
 1️⃣ Install dependencies
 npm install
-
-2️⃣ Create local PostgreSQL database
-Create database walletdb using pgAdmin or:
+2️⃣ Create database
 createdb -U postgres walletdb
-
 3️⃣ Create .env
 PORT=3000
 DATABASE_URL=postgresql://postgres:<YOUR_PASSWORD>@localhost:5432/walletdb
-
 4️⃣ Run migration
 npm run migrate
-
 5️⃣ Start server
 npm run dev
+Swagger:
 
-
-🧪 Example Testing Flow (Swagger)
-Create two wallets
-Deposit money into Wallet A
-Transfer from A → B (with Idempotency-Key header)
-Retry transfer (should not duplicate)
-Check balances
-Check ledger entries
+http://localhost:3000/docs
 
 🎯 What This Project Demonstrates
 Backend API design
-Data consistency guarantees
-Transaction management
-Concurrency handling
-Idempotency implementation
-Clean code structure
+
+ACID guarantees
+
+Concurrency control
+
+Idempotent API design
+
+Database indexing
+
+Soft delete lifecycle handling
+
+Clean architecture
+
 Docker-based development workflow
 ```

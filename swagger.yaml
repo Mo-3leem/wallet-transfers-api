@@ -5,9 +5,18 @@ info:
 servers:
   - url: http://localhost:3000
 
+tags:
+  - name: Meta
+    description: Health and basic info
+  - name: Wallets
+    description: Wallet operations (create, list, deposit, withdraw, delete, restore, ledger)
+  - name: Transfers
+    description: Transfers operations
+
 paths:
   /:
     get:
+      tags: [Meta]
       summary: API home
       responses:
         "200":
@@ -15,13 +24,18 @@ paths:
 
   /health:
     get:
+      tags: [Meta]
       summary: Health check
       responses:
         "200":
           description: OK
 
+  # -----------------------
+  # Wallets
+  # -----------------------
   /wallets:
     get:
+      tags: [Wallets]
       summary: List wallets
       parameters:
         - in: query
@@ -33,7 +47,9 @@ paths:
       responses:
         "200":
           description: OK
+
     post:
+      tags: [Wallets]
       summary: Create wallet
       requestBody:
         required: false
@@ -51,6 +67,7 @@ paths:
 
   /wallets/{id}:
     get:
+      tags: [Wallets]
       summary: Get wallet by id
       parameters:
         - in: path
@@ -64,29 +81,40 @@ paths:
         "404":
           description: Wallet not found
 
-  /wallets/{id}/ledger:
-    get:
-      summary: Get wallet ledger (history)
+    delete:
+      tags: [Wallets]
+      summary: Soft delete wallet (status = deleted)
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: string
-        - in: query
-          name: limit
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 200
       responses:
         "200":
-          description: OK
+          description: Deleted
         "404":
           description: Wallet not found
 
+  /wallets/{id}/restore:
+    patch:
+      tags: [Wallets]
+      summary: Restore soft-deleted wallet (status = active)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Restored
+        "404":
+          description: Wallet not found or not deleted
+
   /wallets/{id}/deposit:
     post:
+      tags: [Wallets]
       summary: Deposit into wallet
       parameters:
         - in: path
@@ -115,6 +143,7 @@ paths:
 
   /wallets/{id}/withdraw:
     post:
+      tags: [Wallets]
       summary: Withdraw from wallet
       parameters:
         - in: path
@@ -141,8 +170,34 @@ paths:
         "404":
           description: Wallet not found
 
+  /wallets/{id}/ledger:
+    get:
+      tags: [Wallets]
+      summary: Get wallet ledger (history)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        "200":
+          description: OK
+        "404":
+          description: Wallet not found
+
+  # -----------------------
+  # Transfers
+  # -----------------------
   /transfers:
     get:
+      tags: [Transfers]
       summary: List transfers
       parameters:
         - in: query
@@ -156,6 +211,7 @@ paths:
           description: OK
 
     post:
+      tags: [Transfers]
       summary: Create transfer
       parameters:
         - in: header
@@ -191,6 +247,7 @@ paths:
 
   /transfers/{id}:
     get:
+      tags: [Transfers]
       summary: Get transfer by id
       parameters:
         - in: path

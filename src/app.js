@@ -4,6 +4,7 @@ import cors from "cors";
 import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
 import YAML from "yamljs";
+import path from "path";
 
 import walletsRoutes from "./routes/wallets.routes.js";
 import transfersRoutes from "./routes/transfers.routes.js";
@@ -16,7 +17,8 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
-const swaggerDoc = YAML.load("./swagger.yaml");
+const swaggerPath = path.join(process.cwd(), "swagger.yaml");
+const swaggerDoc = YAML.load(swaggerPath);
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 app.get("/", (req, res) => {

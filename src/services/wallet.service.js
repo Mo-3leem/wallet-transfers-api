@@ -13,9 +13,40 @@ export async function createWallet({ currency = "EGP" } = {}) {
   return rows[0];
 }
 
-export async function getWallet(id) {
+export async function getWallet(id, { includeDeleted = false } = {}) {
   const { rows } = await pool.query(`SELECT * FROM wallets WHERE id=$1`, [id]);
   if (!rows[0]) throw httpError(404, "Wallet not found");
+
+  if (!includeDeleted && rows[0].status !== "active") {
+    throw httpError(404, "Wallet not found");
+  }
+
+  return rows[0];
+}
+
+export async function deleteWallet(walletId) {
+  const { rows } = await pool.query(
+    `UPDATE wallets
+     SET status='deleted', updated_at=NOW()
+     WHERE id=$1 AND status='active'
+     RETURNING *`,
+    [walletId],
+  );
+
+  if (!rows[0]) throw httpError(404, "Wallet not found");
+
+  return rows[0];
+}
+export async function restoreWallet(walletId) {
+  const { rows } = await pool.query(
+    `UPDATE wallets
+     SET status='active', updated_at=NOW()
+     WHERE id=$1 AND status='deleted'
+     RETURNING *`,
+    [walletId],
+  );
+
+  if (!rows[0]) throw httpError(404, "Wallet not found or not deleted");
   return rows[0];
 }
 
@@ -53,6 +84,8 @@ export async function deposit(walletId, amount_cents) {
       [walletId],
     );
     if (!w.rows[0]) throw httpError(404, "Wallet not found");
+    if (w.rows[0].status !== "active")
+      throw httpError(400, "Wallet is not active");
 
     await client.query(
       `UPDATE wallets SET balance_cents = balance_cents + $1, updated_at=NOW() WHERE id=$2`,
@@ -92,6 +125,8 @@ export async function withdraw(walletId, amount_cents) {
       [walletId],
     );
     if (!w.rows[0]) throw httpError(404, "Wallet not found");
+    if (w.rows[0].status !== "active")
+      throw httpError(400, "Wallet is not active");
 
     const bal = BigInt(w.rows[0].balance_cents);
     if (bal < amt) throw httpError(400, "Insufficient funds");
