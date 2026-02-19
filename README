@@ -1,265 +1,262 @@
+![Node.js](https://img.shields.io/badge/Node.js-18+-green)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)
+![Docker](https://img.shields.io/badge/Docker-Enabled-blue)
+![License](https://img.shields.io/badge/License-MIT-lightgrey)
+
 # 💳 Wallet & Transfers API
 
-A production-style backend REST API built with **Node.js (Express)** and **PostgreSQL** that supports wallet management and atomic money transfers.
+Production-style backend REST API built with **Node.js (Express)** and **PostgreSQL** for secure wallet management and atomic money transfers.
 
-This project demonstrates real backend engineering concepts such as:
-
-- Database transactions (ACID)
-- Row-level locking to prevent race conditions
-- Idempotency key handling for safe retries
-- Append-only ledger design for auditing
-- Soft delete & restore lifecycle
-- Database indexing for performance optimization
-- Clean architecture separation (Routes → Services → Database)
-- Dockerized development environment
-- Swagger (OpenAPI) documentation
+This project focuses on real-world financial system engineering concepts — not just CRUD.
 
 ---
 
-## 🚀 Features
+## 📑 Table of Contents
 
-### Wallet Management
-
-- Create wallet
-- List wallets
-- Get wallet by ID
-- Deposit funds
-- Withdraw funds (with insufficient balance protection)
-- **Soft delete wallet (status = deleted)**
-- **Restore wallet (status = active)**
-
-### Transfers
-
-- Atomic wallet-to-wallet transfers
-- Row-level locking (`SELECT ... FOR UPDATE`)
-- Idempotency key support (prevents duplicate transfers)
-- Transfer status tracking
-
-### Ledger System
-
-- Append-only ledger entries
-- Tracks:
-  - DEPOSIT
-  - WITHDRAW
-  - TRANSFER_OUT
-  - TRANSFER_IN
-- Provides full audit trail for balance changes
-
-### Performance Optimization
-
-Database indexes added on:
-
-- `(from_wallet_id, idempotency_key)` → Fast idempotency checks
-- `wallet_id` in ledger → Faster history retrieval
-- `created_at` → Optimized sorting and listing
-
-### API Documentation
-
-- Swagger UI available at `/docs`
-- Endpoints grouped logically using Swagger Tags
-
-### DevOps
-
-- Docker & Docker Compose setup
-- Easy reset and rebuild commands
-- Environment-based configuration
-- CLI access to PostgreSQL container
+- [Key Highlights](#-key-highlights)
+- [Features](#-features)
+- [Performance Optimization](#-performance-optimization)
+- [Architecture](#-architecture)
+- [Core Engineering Concepts](#-core-engineering-concepts)
+- [Tech Stack](#-tech-stack)
+- [Requirements](#-requirements)
+- [Run with Docker](#-run-with-docker-recommended)
+- [Run Without Docker](#-run-without-docker-optional)
+- [What This Project Demonstrates](#-what-this-project-demonstrates)
 
 ---
 
-## 🛠 Tech Stack
 
-- **Node.js**
-- **Express.js**
-- **PostgreSQL**
-- **pg (node-postgres)**
-- **Docker & Docker Compose**
-- **Swagger (OpenAPI 3)**
-- **UUID**
-- **Helmet & Morgan (security & logging)**
+## 🚀 Key Highlights
+
+- ACID-compliant money transfers  
+- Concurrency-safe balance updates  
+- Idempotent transfer API  
+- Append-only ledger system  
+- Soft delete & restore lifecycle  
+- Optimized database indexing  
+- Clean layered architecture  
+- Dockerized development setup  
+- Swagger (OpenAPI) documentation  
 
 ---
 
-## 🏗 Architecture Overview
+## 🧩 Features
+### 1️⃣ Wallet Management
 
+- Create wallet  
+- List wallets  
+- Get wallet by ID  
+- Deposit funds  
+- Withdraw funds (with balance validation)  
+- Soft delete wallet (`status = deleted`)  
+- Restore wallet (`status = active`)  
+
+---
+
+### 2️⃣ Transfers
+
+- Atomic wallet-to-wallet transfers  
+- Row-level locking (`SELECT ... FOR UPDATE`)  
+- Idempotency key enforcement  
+- Transfer status tracking  
+
+#### Example Request
+
+```http
+POST /transfers
+Idempotency-Key: 123e4567-e89b-12d3-a456-426614174000
+Content-Type: application/json
+```
+
+```json
+{
+  "from_wallet_id": "uuid-1",
+  "to_wallet_id": "uuid-2",
+  "amount": 100
+}
+```
+
+---
+
+### 3️⃣ Ledger System (Audit Trail)
+
+Append-only ledger entries tracking:
+
+- DEPOSIT  
+- WITHDRAW  
+- TRANSFER_OUT  
+- TRANSFER_IN  
+
+Provides:
+
+- Full audit trail  
+- Debugging support  
+- Balance reconstruction capability  
+
+---
+
+## ⚡ Performance Optimization
+
+Indexes added on:
+
+- `(from_wallet_id, idempotency_key)` → Fast idempotency validation  
+- `wallet_id` in ledger → Efficient history retrieval  
+- `created_at` → Optimized sorting & pagination  
+
+Designed to scale with growing data volume.
+
+---
+
+
+## 🏗 Architecture
+```
 src/
-routes/ → HTTP layer
-services/ → Business logic
-db/ → Database connection & migration
-middleware/ → Error handling & validation
-utils/ → Helper functions
+  routes/        → HTTP layer
+  services/      → Business logic
+  db/            → Database & migrations
+  middleware/    → Error handling & validation
+  utils/         → Helpers
+```
 
-### Separation of concerns:
+### Separation of Concerns
 
-- Routes handle HTTP.
-- Services contain core business logic.
-- Database layer ensures data integrity.
-
+- Routes handle HTTP  
+- Services contain core business logic  
+- Database layer ensures data integrity  
 ---
 
-## ⚙️ Core Engineering Concepts Implemented
+## 🧠 Core Engineering Concepts
 
 ### ✅ Atomic Transactions
 
-Transfers are executed inside a database transaction:
+Transfers executed inside DB transaction:
 
-BEGIN
-SELECT ... FOR UPDATE
-UPDATE balances
-INSERT ledger entries
-COMMIT
+```sql
+BEGIN;
+SELECT ... FOR UPDATE;
+UPDATE wallets ...;
+INSERT ledger_entries ...;
+COMMIT;
+```
 
 If anything fails → `ROLLBACK`.
 
-Guarantees money is never partially transferred.
-
----
+Guarantees:
+- No partial money movement
+- Strong consistency
 
 ### ✅ Row-Level Locking
-
 Using:
-
-SELECT ... FOR UPDATE
+```sql
+SELECT ... FOR UPDATE;
+```
 
 Prevents race conditions and double-spending under concurrent requests.
 
----
-
 ### ✅ Idempotency Key
-
 Each transfer requires:
-
-Idempotency-Key: <UUID>
+- Idempotency-Key: <UUID>
 
 Ensures:
-
 - Safe retries
 - No duplicate transfers
 - Conflict detection (409)
 
----
-
 ### ✅ Soft Delete & Restore
+Instead of removing rows:
+- DELETE /wallets/:id → sets status = deleted
+- PATCH /wallets/:id/restore → sets status = active
+- Maintains referential integrity and ledger consistency.
 
-Instead of removing rows from DB:
+## 🛠 Tech Stack
 
-- `DELETE /wallets/{id}` → sets `status = deleted`
-- `PATCH /wallets/{id}/restore` → sets `status = active`
+### Backend
+- Node.js
+- Express.js
+- PostgreSQL
+- pg (node-postgres)
+- UUID
+- Helmet
+- Morgan
 
-Preserves history and maintains data integrity.
+### DevOps
+- Docker
+- Docker Compose
+- Environment-based config
+### Documentation
+- Swagger (OpenAPI 3)
 
----
+## 📦 Requirements
 
-### ✅ Ledger-Based Design
-
-Every balance change is recorded.
-
-Benefits:
-
-- Audit trail
-- Debugging support
-- Possible balance reconstruction
-
----
-
-# 📦 Requirements
-
-To run this project locally, you need:
-
-- Node.js (v18+ recommended)
+- Node.js (v18+)
 - Docker Desktop
 - Git
 
----
-
-# 📥 Download / Clone the Project
-
-### Clone via Git
-
-```bash
-git clone https://github.com/<YOUR_USERNAME>/wallet-service.git
-cd wallet-service
-Or Download ZIP
-Click Code → Download ZIP
-
-Extract project
-
-Open terminal inside folder
-
-🐳 Run With Docker (Recommended)
-1️⃣ Create .env file
-Create .env in root directory:
-
+## 🐳 Run with Docker (Recommended)
+### 1️⃣ Create .env
+```
 PORT=3000
 DATABASE_URL=postgresql://postgres:postgres@db:5432/walletdb
-2️⃣ Start Containers
-npm run docker:up
-3️⃣ Run Migration
-npm run docker:migrate
-4️⃣ Access the API
-API:
+```
 
-http://localhost:3000
-Health:
+### 2️⃣ Start Containers
+```npm run docker:up```
 
-http://localhost:3000/health
-Swagger:
+### 3️⃣ Run Migration
+```npm run docker:migrate```
 
-http://localhost:3000/docs
-Useful Docker Commands
+### 4️⃣ Access API
+
+- API → http://localhost:3000
+
+- Health → http://localhost:3000/health
+
+- Swagger → http://localhost:3000/docs
+
+### Useful Commands
+
 View logs
-npm run docker:logs
+
+```npm run docker:logs```
+
+
 Restart API
-npm run docker:restart
+
+```npm run docker:restart```
+
+
 Stop containers
-npm run docker:down
-♻️ Reset Database (Delete ALL Data)
-npm run docker:reset
-This will:
 
-Remove database volume
+```npm run docker:down```
 
-Rebuild containers
 
-Re-run migration
+Reset database (delete all data)
 
-🔎 Access PostgreSQL CLI
-npm run docker:psql
-Example queries:
+```npm run docker:reset```
 
-SELECT * FROM wallets;
-SELECT * FROM transfers;
-SELECT * FROM ledger_entries;
-💻 Run Locally Without Docker (Optional)
-1️⃣ Install dependencies
-npm install
-2️⃣ Create database
+
+Access PostgreSQL CLI
+
+```npm run docker:psql```
+
+💻 Run Without Docker (Optional)
+```npm install
 createdb -U postgres walletdb
-3️⃣ Create .env
-PORT=3000
-DATABASE_URL=postgresql://postgres:<YOUR_PASSWORD>@localhost:5432/walletdb
-4️⃣ Run migration
 npm run migrate
-5️⃣ Start server
 npm run dev
-Swagger:
+```
 
+Swagger:
 http://localhost:3000/docs
 
 🎯 What This Project Demonstrates
-Backend API design
 
-ACID guarantees
-
-Concurrency control
-
-Idempotent API design
-
-Database indexing
-
-Soft delete lifecycle handling
-
-Clean architecture
-
-Docker-based development workflow
-```
+- Production-style backend API design
+- ACID guarantees in financial systems
+- Concurrency control using row locks
+- Idempotent API design
+- Database indexing strategy
+- Soft delete lifecycle management
+- Clean architecture separation
+- Docker-based workflow
