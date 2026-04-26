@@ -7,6 +7,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "migrate": "node src/db/migrate.js",
+    "test": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules dotenv_config_path=.env.test node -r dotenv/config ./node_modules/jest/bin/jest.js --runInBand",
     "docker:up": "docker compose up --build -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f api",
@@ -17,6 +18,10 @@
     "docker:setup": "docker compose up --build -d && docker compose exec api npm run migrate",
     "docker:reset": "docker compose down -v && docker compose up --build -d && docker compose exec api npm run migrate",
     "docker:clean": "docker compose down -v --remove-orphans && docker system prune -f"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {}
   },
   "keywords": [],
   "author": "",
@@ -34,6 +39,9 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "cross-env": "^10.1.0",
+    "jest": "^30.3.0",
+    "nodemon": "^3.1.11",
+    "supertest": "^7.2.2"
   }
 }
