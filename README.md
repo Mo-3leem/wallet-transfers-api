@@ -1,5 +1,7 @@
 # 💳 Wallet & Transfers API
 
+![App Preview](./docs/swagger-full.png)
+
 Production-style backend REST API built with **Node.js (Express)** and **PostgreSQL** for secure wallet management and atomic money transfers.
 
 This project focuses on real-world financial system engineering concepts — not just CRUD.
@@ -21,40 +23,40 @@ This project focuses on real-world financial system engineering concepts — not
 
 ---
 
-
 ## 🚀 Key Highlights
 
-- ACID-compliant money transfers  
-- Concurrency-safe balance updates  
-- Idempotent transfer API  
-- Append-only ledger system  
-- Soft delete & restore lifecycle  
-- Optimized database indexing  
-- Clean layered architecture  
-- Dockerized development setup  
-- Swagger (OpenAPI) documentation  
+- ACID-compliant money transfers
+- Concurrency-safe balance updates
+- Idempotent transfer API
+- Append-only ledger system
+- Soft delete & restore lifecycle
+- Optimized database indexing
+- Clean layered architecture
+- Dockerized development setup
+- Swagger (OpenAPI) documentation
 
 ---
 
 ## 🧩 Features
+
 ### 1️⃣ Wallet Management
 
-- Create wallet  
-- List wallets  
-- Get wallet by ID  
-- Deposit funds  
-- Withdraw funds (with balance validation)  
-- Soft delete wallet (`status = deleted`)  
-- Restore wallet (`status = active`)  
+- Create wallet
+- List wallets
+- Get wallet by ID
+- Deposit funds
+- Withdraw funds (with balance validation)
+- Soft delete wallet (`status = deleted`)
+- Restore wallet (`status = active`)
 
 ---
 
 ### 2️⃣ Transfers
 
-- Atomic wallet-to-wallet transfers  
-- Row-level locking (`SELECT ... FOR UPDATE`)  
-- Idempotency key enforcement  
-- Transfer status tracking  
+- Atomic wallet-to-wallet transfers
+- Row-level locking (`SELECT ... FOR UPDATE`)
+- Idempotency key enforcement
+- Transfer status tracking
 
 #### Example Request
 
@@ -78,16 +80,16 @@ Content-Type: application/json
 
 Append-only ledger entries tracking:
 
-- DEPOSIT  
-- WITHDRAW  
-- TRANSFER_OUT  
-- TRANSFER_IN  
+- DEPOSIT
+- WITHDRAW
+- TRANSFER_OUT
+- TRANSFER_IN
 
 Provides:
 
-- Full audit trail  
-- Debugging support  
-- Balance reconstruction capability  
+- Full audit trail
+- Debugging support
+- Balance reconstruction capability
 
 ---
 
@@ -95,16 +97,16 @@ Provides:
 
 Indexes added on:
 
-- `(from_wallet_id, idempotency_key)` → Fast idempotency validation  
-- `wallet_id` in ledger → Efficient history retrieval  
-- `created_at` → Optimized sorting & pagination  
+- `(from_wallet_id, idempotency_key)` → Fast idempotency validation
+- `wallet_id` in ledger → Efficient history retrieval
+- `created_at` → Optimized sorting & pagination
 
 Designed to scale with growing data volume.
 
 ---
 
-
 ## 🏗 Architecture
+
 ```
 src/
   routes/        → HTTP layer
@@ -116,9 +118,10 @@ src/
 
 ### Separation of Concerns
 
-- Routes handle HTTP  
-- Services contain core business logic  
-- Database layer ensures data integrity  
+- Routes handle HTTP
+- Services contain core business logic
+- Database layer ensures data integrity
+
 ---
 
 ## 🧠 Core Engineering Concepts
@@ -138,11 +141,14 @@ COMMIT;
 If anything fails → `ROLLBACK`.
 
 Guarantees:
+
 - No partial money movement
 - Strong consistency
 
 ### ✅ Row-Level Locking
+
 Using:
+
 ```sql
 SELECT ... FOR UPDATE;
 ```
@@ -150,16 +156,21 @@ SELECT ... FOR UPDATE;
 Prevents race conditions and double-spending under concurrent requests.
 
 ### ✅ Idempotency Key
+
 Each transfer requires:
+
 - Idempotency-Key: <UUID>
 
 Ensures:
+
 - Safe retries
 - No duplicate transfers
 - Conflict detection (409)
 
 ### ✅ Soft Delete & Restore
+
 Instead of removing rows:
+
 - DELETE /wallets/:id → sets status = deleted
 - PATCH /wallets/:id/restore → sets status = active
 - Maintains referential integrity and ledger consistency.
@@ -167,6 +178,7 @@ Instead of removing rows:
 ## 🛠 Tech Stack
 
 ### Backend
+
 - Node.js
 - Express.js
 - PostgreSQL
@@ -176,10 +188,13 @@ Instead of removing rows:
 - Morgan
 
 ### DevOps
+
 - Docker
 - Docker Compose
 - Environment-based config
+
 ### Documentation
+
 - Swagger (OpenAPI 3)
 
 ## 📦 Requirements
@@ -189,17 +204,21 @@ Instead of removing rows:
 - Git
 
 ## 🐳 Run with Docker (Recommended)
+
 ### 1️⃣ Create .env
+
 ```
 PORT=3000
 DATABASE_URL=postgresql://postgres:postgres@db:5432/walletdb
 ```
 
 ### 2️⃣ Start Containers
-```npm run docker:up```
+
+`npm run docker:up`
 
 ### 3️⃣ Run Migration
-```npm run docker:migrate```
+
+`npm run docker:migrate`
 
 ### 4️⃣ Access API
 
@@ -213,29 +232,26 @@ DATABASE_URL=postgresql://postgres:postgres@db:5432/walletdb
 
 View logs
 
-```npm run docker:logs```
-
+`npm run docker:logs`
 
 Restart API
 
-```npm run docker:restart```
-
+`npm run docker:restart`
 
 Stop containers
 
-```npm run docker:down```
-
+`npm run docker:down`
 
 Reset database (delete all data)
 
-```npm run docker:reset```
-
+`npm run docker:reset`
 
 Access PostgreSQL CLI
 
-```npm run docker:psql```
+`npm run docker:psql`
 
 💻 Run Without Docker (Optional)
+
 ```npm install
 createdb -U postgres walletdb
 npm run migrate
